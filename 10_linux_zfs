@@ -403,9 +403,13 @@ get_dataset_info() {
     if [ -z "${machine_id}" ]; then
         machine_id="${dataset}"
     fi
-    pretty_name=$(. "${etc_dir}/os-release" && echo "${PRETTY_NAME}")
+    real_os_release=$(readlink "${etc_dir}/os-release")
+    if [[ -f "${real_os_release}" ]]
+    then
+        pretty_name=$(. "${etc_dir}/os-release" && echo "${PRETTY_NAME}")
+    fi
     mountpoint -q "${mntdir}/etc" && umount "${mntdir}/etc" || true
-    mountpoint -q "${mntdir}/usr" && umount "${mntdir}/usr" || true
+    mountpoint -q "${mntdir}/usr" && umount "${mntdir}/usr"
 
     # read available kernels from /boot
     boot_dir="$(try_default_layout_bpool "${dataset}" "${mntdir}")"
