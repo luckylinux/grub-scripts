@@ -57,6 +57,7 @@ on_exit() {
     done
 
     mountpoint -q "${MNTDIR}/boot"  && umount "${MNTDIR}/boot" || true
+    mountpoint -q "${MNTDIR}/usr"  && umount "${MNTDIR}/usr" || true
     mountpoint -q "${MNTDIR}"  && umount "${MNTDIR}" || true
     rmdir "${MNTDIR}"
     rm -rf "${ZFSTMP}"
@@ -379,12 +380,14 @@ get_dataset_info() {
     fi
 
     mount -o noatime,zfsutil -t zfs "${base_dataset}" "${mntdir}"
+    mount -o noatime,zfsutil -t zfs "${base_dataset}/usr" "${mntdir}/usr"
 
     # read machine-id/os-release from /etc
     etc_dir=$(get_system_directory "${dataset}" "etc" "true" "${mntdir}" "")
     if [ -z  "${etc_dir}" ]; then
         grub_warn "Ignoring ${dataset}"
         mountpoint -q "${mntdir}/etc" && umount "${mntdir}/etc" || true
+        mountpoint -q "${mntdir}/usr" && umount "${mntdir}/usr" || true
         umount "${mntdir}"
         return
     fi
@@ -402,6 +405,7 @@ get_dataset_info() {
     fi
     pretty_name=$(. "${etc_dir}/os-release" && echo "${PRETTY_NAME}")
     mountpoint -q "${mntdir}/etc" && umount "${mntdir}/etc" || true
+    mountpoint -q "${mntdir}/usr" && umount "${mntdir}/usr" || true
 
     # read available kernels from /boot
     boot_dir="$(try_default_layout_bpool "${dataset}" "${mntdir}")"
@@ -412,6 +416,7 @@ get_dataset_info() {
     if [ -z  "${boot_dir}" ]; then
         grub_warn "Ignoring ${dataset}"
         mountpoint -q "${mntdir}/boot" && umount "${mntdir}/boot" || true
+        mountpoint -q "${mntdir}/usr" && umount "${mntdir}/usr" || true
         umount "${mntdir}"
         return
     fi
@@ -523,6 +528,7 @@ get_dataset_info() {
         grub_warn "didn't find any valid initrd or kernel."
     fi
 
+    umount "${mntdir}/usr" || true
     umount "${mntdir}" || true
     # We needed to look in / for snapshots on root dataset, umount the snapshot for etc before zfs lazily unmount it
     # This process only needs to run if the snapshot contains an .../etc path,
